@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Câu Hỏi</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    width: 80%;
+    max-width: 900px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    text-align: center;
+    color: #333;
+}
+
+/* Form Thêm Câu Hỏi */
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+input, select {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+}
+
+.answers {
+    display: flex;
+    gap: 10px;
+}
+
+.answers input {
+    flex: 1;
+}
+
+.btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+.btn:hover {
+    background: #218838;
+}
+
+/* Bảng Câu Hỏi */
+.question-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.question-table th, .question-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+.question-table th {
+    background: #007bff;
+    color: white;
+}
+
+.question-table tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.answer-list {
+    list-style: none;
+    padding: 0;
+}
+
+.correct-answer {
+    font-weight: bold;
+    color: green;
+}
+
+/* Nút hành động */
+.edit-btn {
+    background: #ffc107;
+    color: black;
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.edit-btn:hover {
+    background: #e0a800;
+}
+
+.delete-btn {
+    background: #dc3545;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.delete-btn:hover {
+    background: #c82333;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Question Management</h2>
+
+        <!-- Add Question Form -->
+        <button id="generateQuestions" class="btn">Generate 5 Math Questions</button>
+
+        <form id="questionForm" class="form-container">
+            <input type="text" id="questionText" placeholder="Enter the question" required>
+            <div class="answers">
+                <input type="text" id="answer1" placeholder="Answer 1" required>
+                <input type="text" id="answer2" placeholder="Answer 2" required>
+                <input type="text" id="answer3" placeholder="Answer 3" required>
+            </div>
+            <select id="correctAnswer">
+                <option value="0">Answer 1 is correct</option>
+                <option value="1">Answer 2 is correct</option>
+                <option value="2">Answer 3 is correct</option>
+            </select>
+            <button type="submit" class="btn">Add Question</button>
+        </form>
+
+        <!-- Question List -->
+        <table class="question-table">
+            <thead>
+                <tr>
+                    <th>Question</th>
+                    <th>Answers</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% questions.forEach(question => { %>
+                    <tr>
+                        <td><%= question.questionText %></td>
+                        <td>
+                            <ul class="answer-list">
+                                <% question.answers.forEach((answer, index) => { %>
+                                    <li class="<%= answer.isCorrect ? 'correct-answer' : '' %>">
+                                        <%= answer.text %>
+                                    </li>
+                                <% }) %>
+                            </ul>
+                        </td>
+                        <td>
+                            <button class="edit-btn" onclick="editQuestion('<%= question._id %>')">✏️ Edit</button>
+                            <button class="delete-btn" onclick="deleteQuestion('<%= question._id %>')">🗑 Delete</button>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.getElementById("questionForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const questionText = document.getElementById("questionText").value;
+            const answers = [
+                { text: document.getElementById("answer1").value, isCorrect: document.getElementById("correctAnswer").value == "0" },
+                { text: document.getElementById("answer2").value, isCorrect: document.getElementById("correctAnswer").value == "1" },
+                { text: document.getElementById("answer3").value, isCorrect: document.getElementById("correctAnswer").value == "2" }
+            ];
+
+            const res = await fetch("/api/questions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ questionText, answers })
+            });
+
+            const result = await res.json();
+
+            if (res.ok) {
+                alert(result.message);
+                window.location.reload();
+            } else {
+                alert(result.error); // Notify if the limit is reached
+            }
+        });
+
+        document.getElementById("generateQuestions").addEventListener("click", async () => {
+    const mathQuestions = generateMathQuestions(5);
+
+    for (const question of mathQuestions) {
+        await fetch("/api/questions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(question),
+        });
+    }
+
+    alert("5 math questions have been added! (max 10)");
+    window.location.reload();
+});
+
+
+        async function deleteQuestion(id) {
+            if (confirm("Are you sure you want to delete this?")) {
+                const res = await fetch(`/api/questions/${id}`, { method: "DELETE" });
+                if (res.ok) window.location.reload();
+            }
+        }
+
+        function editQuestion(id) {
+            window.location.href = `/admin/edit-question/${id}`;
+        }
+
+       
+function generateMathQuestions(count) {
+    const questions = [];
+    for (let i = 0; i < count; i++) {
+        const num1 = Math.floor(Math.random() * 20) + 1;
+        const num2 = Math.floor(Math.random() * 20) + 1;
+        const correctAnswer = num1 + num2;
+        const wrongAnswer1 = correctAnswer + Math.floor(Math.random() * 5) + 1;
+        const wrongAnswer2 = correctAnswer - (Math.floor(Math.random() * 5) + 1);
+
+        questions.push({
+            questionText: `What is ${num1} + ${num2}?`,
+            answers: [
+                { text: correctAnswer.toString(), isCorrect: true },
+                { text: wrongAnswer1.toString(), isCorrect: false },
+                { text: wrongAnswer2.toString(), isCorrect: false },
+            ],
+        });
+    }
+    return questions;
+}
+
+    </script>
+</body>
+
+</html>

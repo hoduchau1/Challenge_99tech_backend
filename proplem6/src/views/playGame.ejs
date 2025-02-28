@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chơi Game</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        /* Reset CSS */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+/* Container chính */
+.container {
+    text-align: center;
+    padding: 20px;
+}
+
+/* Tiêu đề */
+h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+/* Ẩn phần tử */
+.hidden {
+    display: none;
+}
+
+/* Nút bấm */
+.btn {
+    padding: 10px 20px;
+    font-size: 18px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn:hover {
+    background: #2980b9;
+}
+
+/* Khung câu hỏi */
+.game-box {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 10px;
+    background: #ecf0f1;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Câu hỏi */
+h3 {
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
+/* Container đáp án */
+.answer-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Nút đáp án */
+.answer-btn {
+    padding: 10px;
+    font-size: 16px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.answer-btn:hover {
+    background: #bdc3c7;
+}
+
+/* Hiệu ứng chọn đáp án */
+.correct {
+    background: #2ecc71 !important;
+    color: white;
+}
+
+.wrong {
+    background: #e74c3c !important;
+    color: white;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🎮 Quiz Game 🎮</h2>
+
+        <!-- Start Button -->
+        <button id="startGame" class="btn">Start Playing</button>
+
+        <!-- Question Display Area -->
+        <div id="gameContainer" class="game-box hidden">
+            <h3 id="questionText"></h3>
+            <div id="answerButtons" class="answer-container"></div>
+            <button id="nextQuestion" class="btn hidden">Next Question</button>
+        </div>
+    </div>
+
+    <script>
+        let questions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let username = prompt("Enter your name:");
+
+        document.getElementById("startGame").addEventListener("click", async () => {
+            const res = await fetch("/api/game/questions");
+            const data = await res.json();
+            if (data.success) {
+                questions = data.questions;
+                document.getElementById("startGame").classList.add("hidden");
+                document.getElementById("gameContainer").classList.remove("hidden");
+                showQuestion();
+            } else {
+                alert("Error fetching questions!");
+            }
+        });
+
+        function showQuestion() {
+            if (currentIndex >= questions.length) {
+                finishGame();
+                return;
+            }
+
+            const q = questions[currentIndex];
+            document.getElementById("questionText").innerText = q.questionText;
+            const answerButtons = document.getElementById("answerButtons");
+            answerButtons.innerHTML = "";
+
+            q.answers.forEach((answer, index) => {
+                const btn = document.createElement("button");
+                btn.innerText = answer.text;
+                btn.classList.add("answer-btn");
+                btn.onclick = () => selectAnswer(index, btn);
+                answerButtons.appendChild(btn);
+            });
+
+            document.getElementById("nextQuestion").classList.add("hidden");
+        }
+
+        function selectAnswer(selectedIndex, btn) {
+            const q = questions[currentIndex];
+            if (q.answers[selectedIndex].isCorrect) {
+                score++;
+                btn.classList.add("correct");
+            } else {
+                btn.classList.add("wrong");
+            }
+            currentIndex++;
+            document.getElementById("nextQuestion").classList.remove("hidden");
+        }
+
+        document.getElementById("nextQuestion").addEventListener("click", showQuestion);
+
+        function finishGame() {
+            alert(`🎉 You answered correctly ${score} / 10 questions!`);
+            fetch("/api/game/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, score })
+            }).then(() => window.location.href = "/");
+        }
+    </script>
+</body>
+
+</html>

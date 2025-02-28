@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Question</title>
+</head>
+<body>
+    <h2>Edit Question</h2>
+
+    <form id="editForm">
+        <input type="hidden" id="questionId" value="<%= question._id %>">
+        <input type="text" id="questionText" value="<%= question.questionText %>" required>
+        <% question.answers.forEach((answer, index) => { %>
+            <input type="text" id="answer<%= index %>" value="<%= answer.text %>" required>
+            <input type="radio" name="correctAnswer" value="<%= index %>" <% if (answer.isCorrect) { %>checked<% } %>>
+        <% }) %>
+        <button type="submit">Save</button>
+    </form>
+
+    <script>
+        document.getElementById("editForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const id = document.getElementById("questionId").value;
+            const questionText = document.getElementById("questionText").value;
+            const answers = [
+                { text: document.getElementById("answer0").value, isCorrect: document.querySelector('input[name="correctAnswer"]:checked').value == "0" },
+                { text: document.getElementById("answer1").value, isCorrect: document.querySelector('input[name="correctAnswer"]:checked').value == "1" },
+                { text: document.getElementById("answer2").value, isCorrect: document.querySelector('input[name="correctAnswer"]:checked').value == "2" }
+            ];
+
+            // Send a request to update the question
+            const res = await fetch(`/api/questions/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ questionText, answers })
+            });
+
+            // If update is successful, redirect to the question management page
+            if (res.ok) window.location.href = "/admin/questions";
+        });
+    </script>
+</body>
+</html>
