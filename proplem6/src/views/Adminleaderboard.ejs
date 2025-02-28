@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Cập Nhật Điểm</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        table {
+            width: 60%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .edit-score {
+            width: 60px;
+        }
+
+        .save-btn {
+            background-color: green;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .save-btn:hover {
+            background-color: darkgreen;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin - Cập Nhật Điểm</h1>
+
+    <table>
+        <tr>
+            <th>Player</th>
+            <th>Score</th>
+            <th>Update</th>
+        </tr>
+        <% topScores.forEach(user => { %>
+            <tr>
+                <td><%= user.username %></td>
+                <td>
+                    <input type="number" value="<%= user.score %>" class="edit-score" id="score-<%= user.username %>">
+                </td>
+                <td>
+                    <button class="save-btn" onclick="updateScore('<%= user.username %>')">Save</button>
+                    <p id="error-<%= user.username %>" style="margin: 5px 0; color: red;"></p>
+
+                </td>
+            </tr>
+        <% }) %>
+    </table>
+
+    <script>
+        const socket = io();
+
+        function updateScore(username) {
+        const inputElement = document.getElementById(`score-${username}`);
+        const score = Number(inputElement.value);
+        const errorElement = document.getElementById(`error-${username}`);
+
+        fetch("/admin/update-score", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, score })
+        })
+        .then(async (res) => {
+            const data = await res.json();
+            
+            if (!res.ok) {
+                errorElement.innerText = `❌ ${data.error || "have error!"}`;
+                errorElement.style.color = "red";
+                return;
+            }
+
+            errorElement.innerText = "";
+            alert(data.message);
+        })
+        .catch((error) => {
+            errorElement.innerText = `❌ error: ${error.message}`;
+            errorElement.style.color = "red";
+        });
+    }
+
+        socket.on("adminScoreUpdate", (data) => {
+            alert(`Admin updated ${data.username}'s score to ${data.newScore}`);
+            location.reload();
+        });
+    </script>
+</body>
+</html>

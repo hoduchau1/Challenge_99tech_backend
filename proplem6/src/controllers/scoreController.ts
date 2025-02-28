@@ -11,7 +11,6 @@ export function setSocketServer(socketServer: Server) {
 export async function updateScore(req: Request, res: Response): Promise<void> {
     try {
         const { username, score } = req.body;
-
         if (!username || typeof score !== "number") {
             res.status(400).json({ error: "Dữ liệu không hợp lệ!" });
             return;
@@ -23,7 +22,7 @@ export async function updateScore(req: Request, res: Response): Promise<void> {
         }
         let user = await Score.findOne({ username });
         if (user) {
-            user.score += score;
+            user.score = score;
         } else {
             user = new Score({ username, score });
         }

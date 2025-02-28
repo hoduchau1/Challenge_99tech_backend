@@ -22,12 +22,10 @@ router.get('/search', searchUsers);
 router.get('/filter', filterUsersByDateOfBirth);
 
 
+
+
+// render ejs fontend
 router.get('/usersgetlist', getUsersforEjs);
-
-
-
-
-
 
 router.get('/add', (req, res) => {
     res.render('addUser');
